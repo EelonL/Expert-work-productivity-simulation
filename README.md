@@ -24,3 +24,7 @@ streamlit run app.py
 
 Malli on koulutus- ja skenaariotyökalu. Se ei ole validoitu ennustemalli.
 Muuttujat ovat välillä 0–1 ja kertoimet alustavia.
+
+## Käyttöliittymähuomio
+
+Kuvaajissa käytetään lyhyitä skenaarionimiä, jotta selitteet eivät leikkaudu Streamlit Cloudissa.

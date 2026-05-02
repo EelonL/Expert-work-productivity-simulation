@@ -41,6 +41,23 @@ SCENARIOS: Dict[str, Environment] = {
 }
 
 
+SCENARIO_SHORT_NAMES = {
+    "Perustaso": "Perustaso",
+    "Syvätyö / vähemmän keskeytyksiä": "Syvätyö",
+    "Luova ja turvallinen työympäristö": "Luova & turvallinen",
+    "Ylikuormittunut organisaatio": "Ylikuormitus",
+    "Oma skenaario": "Oma",
+}
+
+
+def chart_df(df: pd.DataFrame, value_col: str) -> pd.DataFrame:
+    """Palauta kuvaajalle pivot-taulu lyhyillä sarakenimillä."""
+    tmp = df.copy()
+    tmp["skenaario_lyhyt"] = tmp["skenaario"].map(SCENARIO_SHORT_NAMES).fillna(tmp["skenaario"])
+    return tmp.pivot(index="day", columns="skenaario_lyhyt", values=value_col)
+
+
+
 PARAMETER_LABELS = {
     "autonomy": "Autonomia",
     "meaningfulness": "Työn merkityksellisyys",
@@ -191,27 +208,33 @@ with tab_results:
         summary = summarize(all_results)
         st.dataframe(summary.style.format(precision=3), use_container_width=True)
 
+        with st.expander("Kuvaajien lyhenteet"):
+            legend_df = pd.DataFrame(
+                [{"Lyhenne": short, "Skenaario": full} for full, short in SCENARIO_SHORT_NAMES.items() if full in SCENARIOS]
+            )
+            st.dataframe(legend_df, hide_index=True, use_container_width=True)
+
         col1, col2 = st.columns(2)
 
         with col1:
-            chart_data = all_results.pivot(index="day", columns="skenaario", values="overall_efficiency")
+            chart_data = chart_df(all_results, "overall_efficiency")
             st.line_chart(chart_data)
             st.caption("Kokonaistehokkuus: yhdistelmä suorituksesta, laadusta, oppimisesta, innovaatiosta, prosessitehokkuudesta, uudelleentyöstä ja burnout-riskistä.")
 
         with col2:
-            chart_data = all_results.pivot(index="day", columns="skenaario", values="burnout_risk")
+            chart_data = chart_df(all_results, "burnout_risk")
             st.line_chart(chart_data)
             st.caption("Burnout-riski: kuormituksen, keskeytysten ja epäselvyyden sekä autonomian ja tuen yhteisvaikutus.")
 
         col3, col4 = st.columns(2)
 
         with col3:
-            chart_data = all_results.pivot(index="day", columns="skenaario", values="innovation")
+            chart_data = chart_df(all_results, "innovation")
             st.line_chart(chart_data)
             st.caption("Innovaatio syntyy mallissa luovan kapasiteetin, reflektiivisyyden ja tiedon jakamisen yhdistelmästä.")
 
         with col4:
-            chart_data = all_results.pivot(index="day", columns="skenaario", values="lead_time_index")
+            chart_data = chart_df(all_results, "lead_time_index")
             st.line_chart(chart_data)
             st.caption("Läpimenoaikaindeksi: pienempi arvo on parempi.")
 
@@ -263,24 +286,33 @@ with tab_results:
 
         st.dataframe(summary.style.format(precision=3), use_container_width=True)
 
+        with st.expander("Kuvaajien lyhenteet"):
+            legend_df = pd.DataFrame(
+                [
+                    {"Lyhenne": "Perustaso", "Skenaario": "Perustaso"},
+                    {"Lyhenne": "Oma", "Skenaario": "Oma skenaario"},
+                ]
+            )
+            st.dataframe(legend_df, hide_index=True, use_container_width=True)
+
         col1, col2 = st.columns(2)
 
         with col1:
-            st.line_chart(combined.pivot(index="day", columns="skenaario", values="overall_efficiency"))
+            st.line_chart(chart_df(combined, "overall_efficiency"))
             st.caption("Oma skenaario suhteessa perustasoon.")
 
         with col2:
-            st.line_chart(combined.pivot(index="day", columns="skenaario", values="burnout_risk"))
+            st.line_chart(chart_df(combined, "burnout_risk"))
             st.caption("Kuormitusriskin muutos.")
 
         col3, col4 = st.columns(2)
 
         with col3:
-            st.line_chart(combined.pivot(index="day", columns="skenaario", values="innovation"))
+            st.line_chart(chart_df(combined, "innovation"))
             st.caption("Innovaatioindeksi.")
 
         with col4:
-            st.line_chart(combined.pivot(index="day", columns="skenaario", values="lead_time_index"))
+            st.line_chart(chart_df(combined, "lead_time_index"))
             st.caption("Läpimenoaikaindeksi, pienempi on parempi.")
 
         csv = combined.to_csv(index=False).encode("utf-8")
